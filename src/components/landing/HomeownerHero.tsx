@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, useSpring, useTransform, useMotionValue, useScroll } from 'framer-motion';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 import sofa from '../../assets/images/hero/sofa.jpg';
 import lamp from '../../assets/images/hero/lamp.jpg';
@@ -152,14 +152,7 @@ const HomeownerHero: React.FC = () => {
                     Try before you buy. Consult before you cry.
                 </motion.p>
 
-                <div className="flex items-center gap-4 text-charcoal/60 text-sm justify-center mb-14">
-                    <span className="flex items-center gap-1">
-                        <CheckCircle2 size={16} className="text-orange-600" /> Limited spots available
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <CheckCircle2 size={16} className="text-orange-600" /> Secure your rank
-                    </span>
-                </div>
+
 
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}

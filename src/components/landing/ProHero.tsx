@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Shield, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { BarChart3, Zap, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
@@ -67,10 +67,7 @@ const ProHero: React.FC = () => {
                             Join Early Access
                             <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                         </motion.button>
-                        <div className="flex items-center gap-2 text-sm text-charcoal/40 font-medium">
-                            <CheckCircle2 size={16} className="text-emerald-500" />
-                            Secure your priority rank
-                        </div>
+
                     </motion.div>
                 </div>
 
