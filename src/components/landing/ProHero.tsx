@@ -1,8 +1,22 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, Shield, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const ProHero: React.FC = () => {
+    const { signInWithGoogle } = useAuth();
+    const navigate = useNavigate();
+
+    const handleJoin = async () => {
+        try {
+            await signInWithGoogle();
+            navigate('/dashboard');
+        } catch (error) {
+            console.error("Sign in failed", error);
+        }
+    };
+
     return (
         <section className="relative min-h-screen flex items-center pt-[72px] bg-slate-50 overflow-hidden">
             {/* Blueprint Grid Background */}
@@ -45,6 +59,7 @@ const ProHero: React.FC = () => {
                         className="flex items-center gap-6"
                     >
                         <motion.button
+                            onClick={handleJoin}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             className="px-10 py-5 bg-charcoal text-white font-display font-bold text-lg rounded-full shadow-xl hover:bg-black transition-all cursor-pointer interactive flex items-center gap-2 group"

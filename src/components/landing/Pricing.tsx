@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, Star, Zap } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const plans = [
     {
@@ -42,6 +44,18 @@ const plans = [
 ];
 
 const Pricing: React.FC = () => {
+    const { signInWithGoogle } = useAuth();
+    const navigate = useNavigate();
+
+    const handleJoin = async () => {
+        try {
+            await signInWithGoogle();
+            navigate('/dashboard');
+        } catch (error) {
+            console.error("Sign in failed", error);
+        }
+    };
+
     return (
         <section id="pricing" className="py-32 bg-white">
             <div className="max-w-[900px] mx-auto px-8">
@@ -77,8 +91,8 @@ const Pricing: React.FC = () => {
                             <motion.div
                                 whileHover={{ y: -6 }}
                                 className={`relative rounded-3xl p-8 h-full flex flex-col ${plan.featured
-                                        ? 'border-2 border-orange-600 bg-white shadow-lift'
-                                        : 'border border-stone-200 bg-white shadow-card'
+                                    ? 'border-2 border-orange-600 bg-white shadow-lift'
+                                    : 'border border-stone-200 bg-white shadow-card'
                                     }`}
                             >
                                 {/* Badge */}
@@ -125,8 +139,8 @@ const Pricing: React.FC = () => {
                                             </div>
                                             <span
                                                 className={`text-sm ${feature.includes('UNLIMITED')
-                                                        ? 'font-bold text-charcoal'
-                                                        : 'text-charcoal/60'
+                                                    ? 'font-bold text-charcoal'
+                                                    : 'text-charcoal/60'
                                                     }`}
                                             >
                                                 {feature}
@@ -137,11 +151,12 @@ const Pricing: React.FC = () => {
 
                                 {/* CTA */}
                                 <motion.button
+                                    onClick={handleJoin}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     className={`w-full py-4 rounded-full font-display font-semibold text-base transition-all cursor-pointer ${plan.featured
-                                            ? 'bg-orange-600 text-white hover:bg-orange-700 shadow-lg'
-                                            : 'bg-charcoal text-white hover:bg-black'
+                                        ? 'bg-orange-600 text-white hover:bg-orange-700 shadow-lg'
+                                        : 'bg-charcoal text-white hover:bg-black'
                                         }`}
                                 >
                                     {plan.cta}

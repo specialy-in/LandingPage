@@ -6,6 +6,8 @@ import lamp from '../../assets/images/hero/lamp.jpg';
 import marble from '../../assets/images/hero/marble.jpg';
 import compass from '../../assets/images/hero/compass.jpg';
 import { FlickeringGrid } from '../ui/FlickeringGrid';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const floatingItems = [
     {
@@ -76,10 +78,21 @@ const MagneticButton: React.FC<{ children: React.ReactNode; onClick?: () => void
 };
 
 const HomeownerHero: React.FC = () => {
+    const { signInWithGoogle } = useAuth();
+    const navigate = useNavigate();
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
     const smoothX = useSpring(mouseX, { stiffness: 40, damping: 30 });
     const smoothY = useSpring(mouseY, { stiffness: 40, damping: 30 });
+
+    const handleJoin = async () => {
+        try {
+            await signInWithGoogle();
+            navigate('/dashboard');
+        } catch (error) {
+            console.error("Sign in failed", error);
+        }
+    };
 
     useEffect(() => {
         const handleMouse = (e: MouseEvent) => {
@@ -148,7 +161,7 @@ const HomeownerHero: React.FC = () => {
                     transition={{ delay: 0.5, duration: 0.8, type: 'spring' }}
                     className="flex flex-col items-center gap-6"
                 >
-                    <MagneticButton>
+                    <MagneticButton onClick={handleJoin}>
                         Start Designing Now
                     </MagneticButton>
 
