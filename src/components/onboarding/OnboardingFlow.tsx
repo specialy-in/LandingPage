@@ -91,13 +91,11 @@ export const OnboardingFlow: React.FC = () => {
     const saveData = useCallback(async (data: Partial<UserData>) => {
         if (!user) return;
         const userRef = doc(db, 'users', user.uid);
-        console.log(`[Onboarding] Saving to users/${user.uid}:`, data);
         try {
             await setDoc(userRef, {
                 ...data,
                 updatedAt: serverTimestamp()
             }, { merge: true });
-            console.log(`[Onboarding] Successfully saved to users/${user.uid}`);
         } catch (err) {
             console.error("[Onboarding] Error saving data:", err);
         }
@@ -172,7 +170,6 @@ export const OnboardingFlow: React.FC = () => {
         const referrer = sessionStorage.getItem('referredBy');
         if (referrer) {
             finalData.referredBy = referrer;
-            console.log("Attributing sign-up to:", referrer);
         }
 
         // FIRE AND FORGET: Don't await the save. Let the UI transition immediately.

@@ -29,7 +29,6 @@ const LandingPage: React.FC = () => {
         const params = new URLSearchParams(window.location.search);
         const ref = params.get('ref');
         if (ref) {
-            console.log("Captured Referral:", ref);
             sessionStorage.setItem('referredBy', ref);
         }
     }, []);

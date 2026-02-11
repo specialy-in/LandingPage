@@ -13,7 +13,6 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-console.log("Firebase App Initialized", firebaseConfig.projectId);
 
 export const auth = getAuth(app);
 
@@ -22,8 +21,5 @@ export const auth = getAuth(app);
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 });
-
-console.log("[Firebase] Initialized with experimentalForceLongPolling: true");
-console.log(`[Firebase] Project ID: ${firebaseConfig.projectId}`);
 
 export const storage = getStorage(app);
