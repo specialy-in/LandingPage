@@ -11,11 +11,13 @@ import { AuthenticatedLayout } from './src/components/Layout';
 
 import { OnboardingLayout } from './src/components/onboarding/OnboardingLayout';
 import { OnboardingFlow } from './src/components/onboarding/OnboardingFlow';
+import { SmoothCursor } from './src/components/ui/SmoothCursor';
 
 const App: React.FC = () => {
   return (
     <Router>
       <AuthProvider>
+        <SmoothCursor />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route
