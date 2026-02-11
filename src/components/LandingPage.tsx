@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import LandingHeader from './landing/LandingHeader';
 import HomeownerHero from './landing/HomeownerHero';
 import HowItWorks from './landing/HowItWorks';
@@ -25,13 +26,14 @@ const LandingPage: React.FC = () => {
     };
 
     // --- Referral Capture ---
+    const [searchParams] = useSearchParams();
     React.useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const ref = params.get('ref');
+        const ref = searchParams.get('ref');
         if (ref) {
-            sessionStorage.setItem('referredBy', ref);
+            console.log("Referral detected:", ref);
+            sessionStorage.setItem('pendingReferral', ref);
         }
-    }, []);
+    }, [searchParams]);
 
     // Enhanced Wipe Transition Variants
     const pageVariants = {

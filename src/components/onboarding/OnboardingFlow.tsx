@@ -17,6 +17,7 @@ interface UserData {
     portfolio: string;
     referralId?: string;
     referredBy?: string;
+    referralProcessed?: boolean;
     hasCompletedOnboarding: boolean;
 }
 
@@ -86,6 +87,38 @@ export const OnboardingFlow: React.FC = () => {
 
         return () => unsubscribe();
     }, [user]);
+
+    // --- Reward Logic (Referrer Payout) ---
+    useEffect(() => {
+        if (step === 5 && userData.referredBy && !userData.referralProcessed && user) {
+            const processReferral = async () => {
+                try {
+                    const { query, collection, where, getDocs, updateDoc, doc, increment } = await import('firebase/firestore');
+
+                    // 1. Find the referrer document
+                    const q = query(collection(db, 'users'), where('referralId', '==', userData.referredBy));
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        const referrerDoc = querySnapshot.docs[0];
+
+                        // 2. Increment referrer's reward count
+                        await updateDoc(doc(db, 'users', referrerDoc.id), {
+                            inviteCount: increment(1)
+                        });
+
+                        // 3. Mark current user as processed
+                        await updateDoc(doc(db, 'users', user.uid), {
+                            referralProcessed: true
+                        });
+                    }
+                } catch (err) {
+                    console.error("Referral Reward error:", err);
+                }
+            };
+            processReferral();
+        }
+    }, [step, userData.referredBy, userData.referralProcessed, user]);
 
     // --- Save Helper ---
     const saveData = useCallback(async (data: Partial<UserData>) => {
@@ -163,13 +196,20 @@ export const OnboardingFlow: React.FC = () => {
         const finalData: any = {
             hasCompletedOnboarding: true,
             referralId: existingReferralId,
-            // updatedAt is handled in saveData helper
         };
 
-        // Check for referral
-        const referrer = sessionStorage.getItem('referredBy');
-        if (referrer) {
-            finalData.referredBy = referrer;
+        // --- Attribution Logic ---
+        const pendingRef = sessionStorage.getItem('pendingReferral');
+        if (pendingRef) {
+            finalData.referredBy = pendingRef;
+            sessionStorage.removeItem('pendingReferral');
+        }
+
+        // Check for old referral key (backwards compatible)
+        const oldRef = sessionStorage.getItem('referredBy');
+        if (oldRef && !pendingRef) {
+            finalData.referredBy = oldRef;
+            sessionStorage.removeItem('referredBy');
         }
 
         // FIRE AND FORGET: Don't await the save. Let the UI transition immediately.
