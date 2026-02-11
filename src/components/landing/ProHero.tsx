@@ -64,12 +64,12 @@ const ProHero: React.FC = () => {
                             whileTap={{ scale: 0.95 }}
                             className="px-10 py-5 bg-charcoal text-white font-display font-bold text-lg rounded-full shadow-xl hover:bg-black transition-all cursor-pointer interactive flex items-center gap-2 group"
                         >
-                            Start Free Trial
+                            Join Early Access
                             <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                         </motion.button>
                         <div className="flex items-center gap-2 text-sm text-charcoal/40 font-medium">
                             <CheckCircle2 size={16} className="text-emerald-500" />
-                            No credit card required
+                            Secure your priority rank
                         </div>
                     </motion.div>
                 </div>

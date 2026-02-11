@@ -11,7 +11,7 @@ const plans = [
         price: '₹999',
         period: '/mo',
         featured: false,
-        cta: 'Start Solo',
+        cta: 'Join Early Access',
         features: [
             '50 AI renders / month',
             'Pay-per-lead model',
@@ -29,7 +29,7 @@ const plans = [
         annualPrice: '₹2,000/mo billed annually',
         featured: true,
         badge: 'BEST VALUE',
-        cta: 'Go Studio',
+        cta: 'Join Early Access',
         features: [
             'Unlimited AI renders',
             'UNLIMITED FREE LEADS',

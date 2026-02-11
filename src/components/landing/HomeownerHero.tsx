@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, useSpring, useTransform, useMotionValue, useScroll } from 'framer-motion';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 
 import sofa from '../../assets/images/hero/sofa.jpg';
 import lamp from '../../assets/images/hero/lamp.jpg';
@@ -149,11 +150,16 @@ const HomeownerHero: React.FC = () => {
                     className="text-2xl text-charcoal/60 mb-14 max-w-[650px] mx-auto font-light leading-relaxed"
                 >
                     Try before you buy. Consult before you cry.
-                    <br />
-                    <span className="text-base text-charcoal/40 font-serif italic mt-2 block">
-                        (No awkward small talk required)
-                    </span>
                 </motion.p>
+
+                <div className="flex items-center gap-4 text-charcoal/60 text-sm justify-center mb-14">
+                    <span className="flex items-center gap-1">
+                        <CheckCircle2 size={16} className="text-orange-600" /> Limited spots available
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <CheckCircle2 size={16} className="text-orange-600" /> Secure your rank
+                    </span>
+                </div>
 
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -161,9 +167,15 @@ const HomeownerHero: React.FC = () => {
                     transition={{ delay: 0.5, duration: 0.8, type: 'spring' }}
                     className="flex flex-col items-center gap-6"
                 >
-                    <MagneticButton onClick={handleJoin}>
-                        Start Designing Now
-                    </MagneticButton>
+                    <motion.button
+                        onClick={handleJoin}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-10 py-5 bg-charcoal text-white font-display font-bold text-lg rounded-full shadow-xl hover:bg-black transition-all cursor-pointer interactive flex items-center gap-2 group"
+                    >
+                        Join Early Access
+                        <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                    </motion.button>
 
                     <motion.button
                         whileHover={{ y: 2 }}
