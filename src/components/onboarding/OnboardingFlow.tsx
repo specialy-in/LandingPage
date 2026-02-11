@@ -279,7 +279,33 @@ export const OnboardingFlow: React.FC = () => {
     }
 
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center">
+        <div className="w-full h-full flex flex-col items-center justify-center relative">
+            {/* User Profile Badge */}
+            {user && (
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="fixed top-6 right-6 md:top-10 md:right-10 z-[100] flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-2 pr-6 backdrop-blur-xl shadow-2xl"
+                >
+                    <div className="relative">
+                        <img
+                            src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                            alt="Profile"
+                            className="w-10 h-10 rounded-xl border border-white/10 object-cover"
+                        />
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#0A0A0F]" />
+                    </div>
+                    <div className="flex flex-col">
+                        <p className="text-white font-bold text-sm leading-tight tracking-tight">
+                            {userData.username || 'Searching Name...'}
+                        </p>
+                        <p className="text-white/40 text-[10px] font-mono tracking-wider uppercase overflow-hidden text-ellipsis whitespace-nowrap max-w-[150px]">
+                            {user.email}
+                        </p>
+                    </div>
+                </motion.div>
+            )}
+
             <AnimatePresence mode="wait">
 
                 {/* SCENE 1: ROLE */}
