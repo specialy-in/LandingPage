@@ -87,6 +87,12 @@ const Footer: React.FC = () => {
                         <SocialIcon icon={<Instagram size={16} />} href="#" />
                         <SocialIcon icon={<Twitter size={16} />} href="#" />
                         <SocialIcon icon={<Linkedin size={16} />} href="#" />
+                        <div className="w-px h-4 bg-white/10 mx-2" />
+                        <SocialIcon
+                            icon={<div className="p-1.5 bg-white/5 rounded-lg border border-white/10 group-hover:border-orange-600/50 transition-colors"><Instagram size={14} className="opacity-0 absolute" /><span className="text-xs">✉️</span></div>}
+                            href="mailto:contact@specialy.in"
+                            label="contact@specialy.in"
+                        />
                     </div>
                 </div>
             </div>
@@ -151,13 +157,14 @@ const MagneticButton: React.FC<{ children: React.ReactNode; onClick?: () => void
     );
 };
 
-const SocialIcon: React.FC<{ icon: React.ReactNode; href: string }> = ({ icon, href }) => (
+const SocialIcon: React.FC<{ icon: React.ReactNode; href: string; label?: string }> = ({ icon, href, label }) => (
     <motion.a
         href={href}
         whileHover={{ y: -2, scale: 1.1 }}
-        className="text-[#94949F] hover:text-white transition-colors duration-300"
+        className="flex items-center gap-2 text-[#94949F] hover:text-white transition-colors duration-300"
     >
         {icon}
+        {label && <span className="text-[10px] font-mono tracking-widest uppercase">{label}</span>}
     </motion.a>
 );
 

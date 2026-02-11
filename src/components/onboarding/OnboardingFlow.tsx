@@ -503,9 +503,19 @@ export const OnboardingFlow: React.FC = () => {
                             </button>
                         </div>
 
-                        <p className="text-white/20 text-sm font-mono max-w-md mx-auto leading-relaxed">
-                            "While you wait for us to polish the floors, go tell your friends how cool you are for finding us early."
-                        </p>
+                        <div className="mt-12 pt-12 border-t border-white/5 w-full max-w-sm mx-auto flex flex-col items-center gap-4">
+                            <p className="text-white/20 text-sm font-mono leading-relaxed px-4">
+                                "While you wait for us to polish the floors, go tell your friends how cool you are for finding us early."
+                            </p>
+                            <motion.a
+                                href="mailto:contact@specialy.in"
+                                whileHover={{ scale: 1.05, color: '#fff' }}
+                                className="flex items-center gap-2 text-white/40 font-mono text-[10px] tracking-[0.2em] uppercase transition-colors"
+                            >
+                                <span className="w-1 h-1 rounded-full bg-orange-600" />
+                                contact@specialy.in
+                            </motion.a>
+                        </div>
                     </motion.div>
                 )}
 

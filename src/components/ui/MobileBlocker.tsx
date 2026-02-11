@@ -70,11 +70,19 @@ export const MobileBlocker: React.FC = () => {
                     Mobile Version Coming Soon
                 </div>
 
-                {/* Footer Decor */}
-                <div className="mt-16 flex justify-center gap-4 opacity-20">
-                    <Layout size={24} className="text-white" />
-                    <div className="h-6 w-px bg-white/20" />
-                    <span className="font-display font-bold text-white tracking-widest uppercase text-xs">Specialy</span>
+                <div className="mt-16 flex flex-col items-center gap-6 opacity-30">
+                    <div className="flex items-center gap-4">
+                        <Layout size={24} className="text-white" />
+                        <div className="h-6 w-px bg-white/20" />
+                        <span className="font-display font-bold text-white tracking-widest uppercase text-xs">Specialy</span>
+                    </div>
+
+                    <a
+                        href="mailto:contact@specialy.in"
+                        className="text-[10px] font-mono tracking-[0.3em] uppercase text-white hover:text-orange-600 transition-colors"
+                    >
+                        contact@specialy.in
+                    </a>
                 </div>
             </motion.div>
         </div>
