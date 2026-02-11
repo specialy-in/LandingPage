@@ -101,7 +101,7 @@ const HomeownerHero: React.FC = () => {
                         y: topY,
                         // Clip to corner swatches regions
                         clipPath: 'polygon(0% 0%, 40% 0%, 40% 40%, 0% 40%, 0% 0%, 60% 60%, 100% 60%, 100% 100%, 60% 100%, 60% 60%)',
-                        opacity: 0.9
+                        opacity: 1
                     }}
                 />
 
@@ -109,13 +109,13 @@ const HomeownerHero: React.FC = () => {
                 <div
                     className="absolute inset-0 z-30 pointer-events-none"
                     style={{
-                        background: 'linear-gradient(to bottom, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.8) 100%)'
+                        background: 'linear-gradient(to bottom, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.7) 100%)'
                     }}
                 />
             </motion.div>
 
             {/* 5. GRAIN TEXTURE */}
-            <div className="absolute inset-0 z-40 opacity-[0.03] pointer-events-none mix-blend-overlay grain-texture" />
+            <div className="absolute inset-0 z-40 opacity-[0.05] pointer-events-none mix-blend-overlay grain-texture" />
 
             {/* HERO CONTENT */}
             <div className="relative z-50 max-w-[1100px] mx-auto text-center px-4">
@@ -136,7 +136,7 @@ const HomeownerHero: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 1 }}
-                    className="text-2xl text-charcoal/60 mb-14 max-w-[650px] mx-auto font-light leading-relaxed"
+                    className="text-2xl text-charcoal/80 mb-14 max-w-[650px] mx-auto font-light leading-relaxed"
                 >
                     Experience the first intelligent design workspace.
                     <br />
