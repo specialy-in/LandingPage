@@ -2,21 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Cursor Handling */
-@media (hover: hover) and (pointer: fine) {
-
-    body,
-    a,
-    button,
-    [role="button"],
-    input,
-    label,
-    select,
-    textarea {
-        cursor: none !important;
-    }
-}
-
 body {
     overflow-x: hidden;
 }

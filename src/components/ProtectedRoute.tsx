@@ -56,9 +56,9 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     if (PRE_LAUNCH_MODE && isOnboarded) {
         const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
 
-        // If NOT admin, and trying to go anywhere except /onboarding (the referral hub), BLOCK THEM.
-        if (!isAdmin && location.pathname !== '/onboarding') {
-            return <Navigate to="/onboarding" replace />;
+        // If NOT admin, and trying to go to /onboarding, REDIRECT them to /dashboard (the Pass View).
+        if (!isAdmin && location.pathname === '/onboarding') {
+            return <Navigate to="/dashboard" replace />;
         }
     }
 

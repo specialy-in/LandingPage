@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, ShoppingCart, ChevronDown, X, CheckCircle,
-    MapPin, Send, Users, Star
+    MapPin, Send, Users, Star, ArrowRight, Clock
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 // import { PageFilters } from '../common/PageFilters'; // No longer used
@@ -11,24 +11,65 @@ import { UniversalFilterBar } from '../common/UniversalFilterBar';
 import { PageContainer } from '../common/PageContainer';
 import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../lib/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
-// --- Types ---
+// --- Helpers ---
+const getPortfolioImages = (data: any): string[] => {
+    // 1. Check portfolioImages (standard typed field)
+    if (Array.isArray(data.portfolioImages) && data.portfolioImages.length > 0) {
+        return data.portfolioImages;
+    }
+
+    // 2. Check portfolioURLs — the actual field name used during onboarding
+    if (data.portfolioURLs) {
+        if (Array.isArray(data.portfolioURLs)) {
+            const urls = data.portfolioURLs.filter((v: any) => typeof v === 'string' && v.startsWith('http'));
+            if (urls.length > 0) return urls;
+        } else if (typeof data.portfolioURLs === 'object') {
+            const urls = Object.values(data.portfolioURLs).filter(
+                (v: any) => typeof v === 'string' && v.startsWith('http')
+            ) as string[];
+            if (urls.length > 0) return urls;
+        }
+    }
+
+    // 3. Fallback: scan all fields for nested Firebase Storage URLs
+    const images: string[] = [];
+    const skipKeys = ['createdAt', 'updatedAt', 'selectedPlan', 'specialties', 'specializations', 'photoURL', 'profilePhotoURL'];
+    Object.keys(data).forEach(key => {
+        if (skipKeys.includes(key)) return;
+        const value = data[key];
+        if (typeof value === 'string' && value.startsWith('http') && value.includes('firebasestorage')) {
+            images.push(value);
+        } else if (typeof value === 'object' && value !== null) {
+            const vals = Array.isArray(value) ? value : Object.values(value);
+            vals.forEach((v: any) => {
+                if (typeof v === 'string' && v.startsWith('http') && v.includes('firebasestorage')) {
+                    images.push(v);
+                }
+            });
+        }
+    });
+
+    return images;
+};
 interface Architect {
     id: string;
-    name: string;
+    username?: string;
+    firmName?: string;
     photoURL: string;
     email: string;
     city: string;
-    specializations: string[];
+    specialties?: string[];
+    specializations?: string[]; // Legacy support
     yearsExperience: number;
-    tagline: string;
-    bio: string;
+    tagline?: string;
+    bio?: string;
+    designPhilosophy?: string;
     portfolioImages: string[];
-    verified: boolean;
-    projectsCompleted?: number;
-    avgResponseTime?: string;
-    selectedPlan?: 'studio' | 'freelancer' | 'student';
+    verificationStatus: boolean;
+    selectedPlan?: 'specialy-max' | 'freelancer' | 'student';
+    createdAt?: any;
 }
 
 interface Project {
@@ -36,194 +77,7 @@ interface Project {
     name: string;
 }
 
-// --- Mock Data ---
-const mockArchitects: Architect[] = [
-    {
-        id: 'arch-1',
-        name: 'Priya Sharma',
-        photoURL: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-        email: 'priya@example.com',
-        city: 'Mumbai',
-        specializations: ['Modern', 'Minimalist'],
-        yearsExperience: 8,
-        tagline: 'Specialist in Modern & Minimalist Residential Spaces',
-        bio: 'With over 8 years of experience in residential interior design, I bring a unique blend of contemporary aesthetics and functional living spaces. My approach focuses on clean lines, natural materials, and thoughtful space planning that enhances daily living.\n\nI believe every home should tell a story – your story. Whether you\'re redesigning a single room or your entire home, I work closely with clients to understand their lifestyle, preferences, and aspirations.',
-        portfolioImages: [
-            'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=600',
-            'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600',
-            'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600',
-            'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600',
-            'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=600',
-            'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=600',
-        ],
-        verified: true,
-        projectsCompleted: 23,
-        avgResponseTime: '< 12 hours',
-        selectedPlan: 'studio'
-    },
-    {
-        id: 'arch-2',
-        name: 'Arjun Mehta',
-        photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-        email: 'arjun@example.com',
-        city: 'Delhi',
-        specializations: ['Industrial', 'Contemporary'],
-        yearsExperience: 12,
-        tagline: 'Creating Raw, Authentic Industrial Spaces',
-        bio: 'I specialize in industrial and contemporary design, transforming spaces with exposed materials, bold textures, and purposeful design elements. My work celebrates authenticity and craftsmanship.\n\nEvery project is an opportunity to create something unique that reflects both the architecture of the space and the personality of its inhabitants.',
-        portfolioImages: [
-            'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600',
-            'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=600',
-            'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600',
-            'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600',
-            'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=600',
-            'https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=600',
-        ],
-        verified: true,
-        projectsCompleted: 45,
-        avgResponseTime: '< 24 hours',
-        selectedPlan: 'studio'
-    },
-    {
-        id: 'arch-3',
-        name: 'Sneha Reddy',
-        photoURL: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200',
-        email: 'sneha@example.com',
-        city: 'Bangalore',
-        specializations: ['Scandinavian', 'Minimalist'],
-        yearsExperience: 5,
-        tagline: 'Nordic-Inspired Warmth for Indian Homes',
-        bio: 'Bringing the warmth and simplicity of Scandinavian design to Indian homes. I focus on light, functionality, and the beauty of natural materials.\n\nMy designs prioritize comfort and practicality while maintaining a clean, uncluttered aesthetic that promotes well-being.',
-        portfolioImages: [
-            'https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=600',
-            'https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?w=600',
-            'https://images.unsplash.com/photo-1600585152220-90363fe7e115?w=600',
-            'https://images.unsplash.com/photo-1616137466211-f939a420be84?w=600',
-            'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=600',
-            'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=600',
-        ],
-        verified: true,
-        projectsCompleted: 15,
-        avgResponseTime: '< 6 hours',
-        selectedPlan: 'freelancer'
-    },
-    {
-        id: 'arch-4',
-        name: 'Vikram Patel',
-        photoURL: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
-        email: 'vikram@example.com',
-        city: 'Pune',
-        specializations: ['Traditional', 'Contemporary'],
-        yearsExperience: 15,
-        tagline: 'Blending Heritage with Modern Comfort',
-        bio: 'With 15 years of experience, I specialize in creating spaces that honor traditional Indian aesthetics while incorporating modern conveniences and sustainability.\n\nMy work celebrates our rich cultural heritage while ensuring homes are practical, comfortable, and suited for contemporary lifestyles.',
-        portfolioImages: [
-            'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=600',
-            'https://images.unsplash.com/photo-1600566753104-685f4f24cb4d?w=600',
-            'https://images.unsplash.com/photo-1600210491369-e753d80a41f3?w=600',
-            'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=600',
-            'https://images.unsplash.com/photo-1600573472591-ee6981cf81e6?w=600',
-            'https://images.unsplash.com/photo-1600566753151-384129cf4e3e?w=600',
-        ],
-        verified: true,
-        projectsCompleted: 67,
-        avgResponseTime: '< 24 hours',
-        selectedPlan: 'freelancer'
-    },
-    {
-        id: 'arch-5',
-        name: 'Ananya Krishnan',
-        photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
-        email: 'ananya@example.com',
-        city: 'Chennai',
-        specializations: ['Modern', 'Tropical'],
-        yearsExperience: 7,
-        tagline: 'Tropical Modern Living for Coastal Homes',
-        bio: 'Specializing in tropical modern design that embraces natural ventilation, local materials, and indoor-outdoor living perfect for South Indian climates.\n\nI create homes that are cool, comfortable, and connected to nature.',
-        portfolioImages: [
-            'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600',
-            'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=600',
-            'https://images.unsplash.com/photo-1600210492493-0946911123ea?w=600',
-            'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600',
-            'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=600',
-            'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600',
-        ],
-        verified: true,
-        projectsCompleted: 28,
-        avgResponseTime: '< 12 hours',
-        selectedPlan: 'freelancer'
-    },
-    {
-        id: 'arch-6',
-        name: 'Rahul Deshmukh',
-        photoURL: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
-        email: 'rahul@example.com',
-        city: 'Hyderabad',
-        specializations: ['Contemporary', 'Luxury'],
-        yearsExperience: 10,
-        tagline: 'Luxury Interiors with Contemporary Flair',
-        bio: 'Creating high-end residential interiors that combine luxury with livability. My designs feature premium materials, custom furniture, and meticulous attention to detail.\n\nI believe luxury should be both beautiful and functional.',
-        portfolioImages: [
-            'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=600',
-            'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600',
-            'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600',
-            'https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?w=600',
-            'https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=600',
-            'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600',
-        ],
-        verified: true,
-        projectsCompleted: 38,
-        avgResponseTime: '< 24 hours',
-        selectedPlan: 'studio'
-    },
-    {
-        id: 'arch-7',
-        name: 'Kavitha Iyer',
-        photoURL: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',
-        email: 'kavitha@example.com',
-        city: 'Mumbai',
-        specializations: ['Minimalist', 'Japanese'],
-        yearsExperience: 6,
-        tagline: 'Zen-Inspired Minimalism for Urban Homes',
-        bio: 'Bringing the tranquility of Japanese design principles to Mumbai apartments. My work focuses on creating calm, clutter-free spaces that promote mindfulness.\n\nEvery element in my designs has purpose and meaning.',
-        portfolioImages: [
-            'https://images.unsplash.com/photo-1600585152220-90363fe7e115?w=600',
-            'https://images.unsplash.com/photo-1616137466211-f939a420be84?w=600',
-            'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=600',
-            'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=600',
-            'https://images.unsplash.com/photo-1600210491369-e753d80a41f3?w=600',
-            'https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=600',
-        ],
-        verified: false,
-        projectsCompleted: 12,
-        avgResponseTime: '< 6 hours',
-        selectedPlan: 'student'
-    },
-    {
-        id: 'arch-8',
-        name: 'Aditya Nair',
-        photoURL: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200',
-        email: 'aditya@example.com',
-        city: 'Kolkata',
-        specializations: ['Traditional', 'Colonial'],
-        yearsExperience: 20,
-        tagline: 'Preserving Colonial Heritage in Modern Homes',
-        bio: 'With two decades of experience, I specialize in restoring and reimagining colonial-era homes while preserving their historical character.\n\nMy work bridges the gap between heritage conservation and contemporary living.',
-        portfolioImages: [
-            'https://images.unsplash.com/photo-1600566753104-685f4f24cb4d?w=600',
-            'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=600',
-            'https://images.unsplash.com/photo-1600573472591-ee6981cf81e6?w=600',
-            'https://images.unsplash.com/photo-1600566753151-384129cf4e3e?w=600',
-            'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=600',
-            'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=600',
-        ],
-        verified: true,
-        projectsCompleted: 89,
-        avgResponseTime: '< 48 hours',
-        selectedPlan: 'studio'
-    }
-];
-
+// --- Mock Data Removed ---
 const mockProjects: Project[] = [
     { id: 'proj-1', name: 'Living Room Makeover' },
     { id: 'proj-2', name: 'Master Bedroom Redesign' },
@@ -295,77 +149,96 @@ const ArchitectCard: React.FC<{
     architect: Architect;
     onViewPortfolio: () => void;
     onSendProposal: () => void;
-}> = ({ architect, onViewPortfolio }) => {
-    // Generate skill tags from specializations
-    const skillTags = architect.specializations.slice(0, 3);
-    const isPremium = architect.selectedPlan === 'studio';
+}> = ({ architect, onViewPortfolio, onSendProposal }) => {
+    const isPremium = architect.selectedPlan === 'specialy-max';
+    const displayTags = architect.specialties?.slice(0, 3) || architect.specializations?.slice(0, 3) || [];
+    const displayName = architect.firmName || architect.username || 'Unnamed Professional';
+    const profileImg = architect.photoURL || (architect as any).profilePhotoURL || `https://ui-avatars.com/api/?name=${displayName}`;
+
+    // Robust extraction
+    const derivedPortfolio = getPortfolioImages(architect);
+    const thumbnail = derivedPortfolio[0] || profileImg;
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ y: -5 }}
-            className="group relative bg-white/[0.02] backdrop-blur-md border border-white/[0.06] rounded-2xl overflow-hidden hover:border-white/10 hover:shadow-2xl hover:shadow-orange-500/5 transition-all duration-300 flex flex-col items-center pt-8 pb-6 px-6"
+            className="group relative bg-[#0D0D12] border border-white/5 rounded-2xl overflow-hidden flex flex-col md:flex-row gap-0 hover:border-orange-500/20 transition-all duration-500"
         >
-            {/* Circular Profile Photo */}
-            <div className="relative mb-6">
-                <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-br from-white/10 to-transparent">
-                    <img
-                        src={architect.photoURL}
-                        alt={architect.name}
-                        className="w-full h-full rounded-full object-cover shadow-lg group-hover:scale-105 transition-transform duration-500"
-                    />
-                </div>
-                {/* Verified Badge */}
-                {architect.verified && (
-                    <div className="absolute bottom-0 right-2 bg-blue-500 text-white p-1 rounded-full border-4 border-[#0a0a0a]">
-                        <CheckCircle size={14} fill="currentColor" className="text-white" />
+            {/* Left: Project Thumbnail (The "Hook") */}
+            <div className="w-full md:w-[320px] aspect-[4/3] md:aspect-auto relative overflow-hidden flex-shrink-0">
+                <img
+                    src={thumbnail}
+                    alt={displayName}
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                {/* Profile Overlay */}
+                <div className="absolute bottom-4 left-4 flex items-center gap-3">
+                    <img src={profileImg} alt="" className="w-10 h-10 rounded-full border-2 border-white/20 shadow-xl" />
+                    <div>
+                        <div className="flex items-center gap-1.5 font-display font-bold text-white text-sm shadow-sm">
+                            {displayName}
+                            {(architect.verificationStatus === true || architect.verificationStatus === ("true" as any)) && (
+                                <CheckCircle size={12} className="text-blue-400 fill-blue-400/20" />
+                            )}
+                        </div>
+                        <span className="text-[10px] uppercase font-mono tracking-widest text-white/50">Verified Pro</span>
                     </div>
-                )}
-            </div>
-
-            {/* Content */}
-            <div className="text-center w-full mb-6">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                    <h3 className="text-xl font-serif font-bold text-gray-100">{architect.name}</h3>
-                    {isPremium && (
-                        <Star size={16} className="text-amber-400 fill-amber-400" />
-                    )}
-                </div>
-
-                <p className="text-xs font-semibold uppercase tracking-widest text-orange-500 mb-3">Interior Designer</p>
-
-                <p className="text-gray-400 text-sm line-clamp-2 mb-4 h-10 px-2 leading-relaxed">
-                    "{architect.tagline}"
-                </p>
-
-                <div className="flex items-center justify-center gap-4 text-xs text-gray-500 mb-6 border-y border-white/5 py-3">
-                    <span className="flex items-center gap-1"><MapPin size={12} /> {architect.city}</span>
-                    <span className="w-1 h-1 bg-gray-700 rounded-full" />
-                    <span>{architect.yearsExperience} years exp</span>
-                </div>
-
-                {/* Skill Tags */}
-                <div className="flex flex-wrap justify-center gap-2 mb-2">
-                    {skillTags.map((tag, idx) => (
-                        <span
-                            key={idx}
-                            className="px-2.5 py-1 text-[10px] uppercase font-medium bg-white/5 border border-white/5 rounded-full text-gray-400"
-                        >
-                            {tag}
-                        </span>
-                    ))}
                 </div>
             </div>
 
-            {/* Buttons */}
-            <div className="w-full mt-auto space-y-2">
-                <button
-                    onClick={onViewPortfolio}
-                    className="w-full py-2.5 bg-white/[0.05] border border-white/5 text-gray-200 text-sm font-medium rounded-lg hover:bg-white/10 hover:text-white transition-colors"
-                >
-                    View Portfolio
-                </button>
+            {/* Right: Dossier Details */}
+            <div className="flex-grow p-6 md:p-8 flex flex-col justify-between">
+                <div>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex flex-wrap gap-3">
+                            {isPremium && (
+                                <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded text-[9px] font-bold text-amber-500 uppercase tracking-widest shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+                                    <Star size={10} fill="currentColor" /> Premium
+                                </span>
+                            )}
+                            <span className="flex items-center gap-1.5 text-[10px] font-mono text-white/40 uppercase tracking-widest">
+                                <MapPin size={12} /> {architect.city}
+                            </span>
+                        </div>
+                        <div className="px-3 py-1 bg-white/[0.03] border border-white/5 rounded text-[10px] font-mono text-white/60">
+                            {architect.yearsExperience} YRS EXP
+                        </div>
+                    </div>
+
+                    <h3 className="text-xl md:text-2xl font-serif font-bold text-white mb-3 tracking-tight group-hover:text-orange-400 transition-colors">
+                        {architect.tagline || (architect.firmName ? `Principal Architect at ${architect.firmName}` : 'Interior Architect')}
+                    </h3>
+
+                    <p className="text-white/40 text-sm leading-relaxed mb-6 font-light line-clamp-2 max-w-2xl italic">
+                        "{architect.designPhilosophy || architect.bio || 'Creating spaces that resonate with the soul.'}"
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mb-8">
+                        {displayTags.map((tag, idx) => (
+                            <span key={idx} className="px-3 py-1 bg-white/5 border border-white/[0.05] rounded-md text-[10px] font-mono uppercase tracking-widest text-white/30">
+                                {tag}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4 pt-6 border-t border-white/5">
+                    <button
+                        onClick={onViewPortfolio}
+                        className="flex-1 md:flex-none px-6 py-3 rounded-lg border border-white/10 text-white/40 text-[11px] font-mono font-bold uppercase tracking-widest hover:bg-white/5 hover:text-white transition-all"
+                    >
+                        View Profile
+                    </button>
+                    <button
+                        onClick={onSendProposal}
+                        className="flex-1 md:flex-none px-8 py-3 bg-white text-black font-display font-black text-[11px] uppercase tracking-widest rounded-lg hover:bg-orange-500 hover:text-white transition-all transform hover:-translate-y-0.5 shadow-xl shadow-black/40"
+                    >
+                        Start Project
+                    </button>
+                </div>
             </div>
         </motion.div>
     );
@@ -373,12 +246,21 @@ const ArchitectCard: React.FC<{
 
 // ... Skeleton Card ...
 const SkeletonCard: React.FC = () => (
-    <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8 flex flex-col items-center animate-pulse">
-        <div className="w-32 h-32 rounded-full bg-white/5 mb-6" />
-        <div className="h-6 bg-white/5 rounded w-1/2 mb-3" />
-        <div className="h-4 bg-white/5 rounded w-1/3 mb-6" />
-        <div className="h-12 bg-white/5 rounded w-full mb-6" />
-        <div className="w-full h-10 bg-white/5 rounded" />
+    <div className="bg-[#0D0D12] border border-white/5 rounded-2xl overflow-hidden flex flex-col md:flex-row gap-0 animate-pulse">
+        <div className="w-full md:w-[320px] aspect-[4/3] md:aspect-auto bg-white/5 flex-shrink-0" />
+        <div className="flex-grow p-8">
+            <div className="flex justify-between mb-8">
+                <div className="h-4 bg-white/5 rounded w-1/4" />
+                <div className="h-6 bg-white/5 rounded w-20" />
+            </div>
+            <div className="h-8 bg-white/5 rounded w-3/4 mb-4" />
+            <div className="h-4 bg-white/5 rounded w-full mb-2" />
+            <div className="h-4 bg-white/5 rounded w-2/3 mb-10" />
+            <div className="flex gap-4">
+                <div className="h-10 bg-white/5 rounded w-32" />
+                <div className="h-10 bg-white/5 rounded w-40" />
+            </div>
+        </div>
     </div>
 );
 
@@ -429,16 +311,22 @@ const ProfileModal: React.FC<{
                 <div className="w-full md:w-[60%] bg-zinc-950 p-6 overflow-y-auto hide-scrollbar border-r border-white/[0.06]">
                     <h3 className="text-2xl font-serif font-bold text-white mb-6 sticky top-0 bg-zinc-950 py-2 z-10">Portfolio</h3>
                     <div className="columns-1 sm:columns-2 gap-4 space-y-4">
-                        {architect.portfolioImages.map((img, idx) => (
-                            <div
-                                key={idx}
-                                onClick={() => setSelectedImage(img)}
-                                className="break-inside-avoid rounded-xl overflow-hidden cursor-zoom-in group relative"
-                            >
-                                <img src={img} alt="" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105" />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
+                        {getPortfolioImages(architect).length > 0 ? (
+                            getPortfolioImages(architect).map((img, idx) => (
+                                <div
+                                    key={idx}
+                                    onClick={() => setSelectedImage(img)}
+                                    className="break-inside-avoid rounded-xl overflow-hidden cursor-zoom-in group relative mb-4"
+                                >
+                                    <img src={img} alt="" className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105" />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
+                                </div>
+                            ))
+                        ) : (
+                            <div className="col-span-2 text-center py-20 text-gray-600 font-mono text-xs uppercase tracking-widest">
+                                No portfolio images uploaded
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
 
@@ -447,29 +335,29 @@ const ProfileModal: React.FC<{
                     <div className="flex-1 overflow-y-auto hide-scrollbar">
                         <div className="flex items-center gap-5 mb-8">
                             <img
-                                src={architect.photoURL}
-                                alt={architect.name}
+                                src={architect.photoURL || (architect as any).profilePhotoURL}
+                                alt={architect.username}
                                 className="w-20 h-20 rounded-full object-cover ring-2 ring-white/10"
                             />
                             <div>
-                                <h2 className="text-2xl font-serif font-bold text-white mb-1">{architect.name}</h2>
-                                <p className="text-orange-500 text-sm font-medium uppercase tracking-wider">Interior Designer</p>
+                                <h2 className="text-2xl font-serif font-bold text-white mb-1">{architect.firmName || architect.username}</h2>
+                                <p className="text-orange-500 text-xs font-mono uppercase tracking-[0.3em]">Verified Architect</p>
                             </div>
                         </div>
 
                         <div className="space-y-8 pr-2">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">About</h4>
-                                <p className="text-gray-300 leading-relaxed text-sm whitespace-pre-line font-light">
-                                    {architect.bio}
+                                <h4 className="text-[10px] font-mono font-bold text-gray-500 mb-3 uppercase tracking-[0.2em]">Design Philosophy</h4>
+                                <p className="text-gray-300 leading-relaxed text-sm whitespace-pre-line font-serif italic text-lg decoration-orange-500/20">
+                                    {architect.designPhilosophy || architect.bio}
                                 </p>
                             </div>
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Specializations</h4>
+                                <h4 className="text-[10px] font-mono font-bold text-gray-500 mb-3 uppercase tracking-[0.2em]">Expertise</h4>
                                 <div className="flex flex-wrap gap-2">
-                                    {architect.specializations.map((spec) => (
-                                        <span key={spec} className="px-3 py-1 bg-white/5 border border-white/5 text-gray-300 text-xs rounded-full">
+                                    {(architect.specialties || architect.specializations || []).map((spec) => (
+                                        <span key={spec} className="px-3 py-1 bg-white/[0.03] border border-white/5 text-gray-400 text-[10px] font-mono uppercase tracking-widest rounded">
                                             {spec}
                                         </span>
                                     ))}
@@ -487,11 +375,12 @@ const ProfileModal: React.FC<{
                                 </div>
                                 <div>
                                     <div className="text-xs text-gray-500 mb-1">Projects</div>
-                                    <div className="text-white font-medium">{architect.projectsCompleted}+ Done</div>
+                                    {/* Fallback for legacy data */}
+                                    <div className="text-white font-medium">{(architect as any).projectsCompleted || (architect.yearsExperience * 3)}+ Done</div>
                                 </div>
                                 <div>
                                     <div className="text-xs text-gray-500 mb-1">Response</div>
-                                    <div className="text-white font-medium">{architect.avgResponseTime || '24h'}</div>
+                                    <div className="text-white font-medium">{(architect as any).avgResponseTime || (architect.selectedPlan === 'specialy-max' ? '< 4h' : '24h')}</div>
                                 </div>
                             </div>
                         </div>
@@ -500,9 +389,9 @@ const ProfileModal: React.FC<{
                     <div className="mt-6 pt-6 border-t border-white/[0.08]">
                         <button
                             onClick={onSendProposal}
-                            className="w-full py-4 bg-orange-600 text-white font-bold tracking-wide rounded-xl hover:bg-orange-500 transition-all shadow-lg shadow-orange-900/20 transform hover:-translate-y-1"
+                            className="w-full py-4 bg-white text-black font-display font-black text-xs tracking-[0.2em] rounded-xl hover:bg-orange-500 hover:text-white transition-all shadow-lg transform hover:-translate-y-1 uppercase"
                         >
-                            Start Project with {architect.name.split(' ')[0]}
+                            START PROJECT WITH {architect.username?.split(' ')[0] || 'PRO'}
                         </button>
                     </div>
                 </div>
@@ -576,7 +465,7 @@ const ProposalModal: React.FC<{
             });
             onSuccess();
             onClose();
-            toast.success(`Proposal sent to ${architect.name}`);
+            toast.success(`Proposal sent to ${architect.firmName || architect.username}`);
         } catch (e) {
             setSubmitting(false);
             toast.error('Failed to send');
@@ -673,9 +562,11 @@ const ProposalModal: React.FC<{
 const BrowseArchitects: React.FC = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const urlQuery = searchParams.get('q') || '';
     const [loading, setLoading] = useState(true);
     const [architects, setArchitects] = useState<Architect[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(urlQuery);
     const [selectedCity, setSelectedCity] = useState('All Cities');
     const [selectedSpecialization, setSelectedSpecialization] = useState('All Styles');
     const [selectedExperience, setSelectedExperience] = useState('Any Experience');
@@ -685,25 +576,83 @@ const BrowseArchitects: React.FC = () => {
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const profileRef = useRef<HTMLDivElement>(null);
 
+    const [error, setError] = useState<string | null>(null);
+    const [notified, setNotified] = useState(false);
+
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setArchitects(mockArchitects);
-            setLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
+        // Query for professionals. We'll filter and sort client-side to handle 
+        // string vs boolean and avoid immediate composite index requirements.
+        const q = query(
+            collection(db, 'users'),
+            where('role', '==', 'PROFESSIONAL')
+        );
+
+        const unsubscribe = onSnapshot(q,
+            (snapshot) => {
+                const fetchedArchitects = snapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+                    .filter((user: any) =>
+                        user.verificationStatus === true ||
+                        user.verificationStatus === "true"
+                    ) as Architect[];
+
+                // Sort by createdAt client-side
+                fetchedArchitects.sort((a, b) => {
+                    const timeA = a.createdAt?.toMillis?.() || 0;
+                    const timeB = b.createdAt?.toMillis?.() || 0;
+                    return timeA - timeB;
+                });
+
+                console.log("Fetched Architects:", fetchedArchitects.map(a => ({
+                    id: a.id,
+                    name: a.firmName || a.username,
+                    photoURL: a.photoURL,
+                    profilePhotoURL: (a as any).profilePhotoURL,
+                    portfolioImages: a.portfolioImages,
+                    projectImages: (a as any).projectImages
+                })));
+
+                setArchitects(fetchedArchitects);
+                setLoading(false);
+                setError(null);
+            },
+            (err: any) => {
+                console.error("Firestore Fetch error:", err);
+                if (err.code === 'permission-denied') {
+                    setError("Permission Denied: meaningful-access to 'users' collection is blocked. Please update your Firestore Rules.");
+                } else {
+                    setError("Our architect list is currently in a meeting. Try refreshing in a moment.");
+                }
+                setLoading(false);
+            }
+        );
+
+        return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        setSearchQuery(urlQuery);
+    }, [urlQuery]);
 
     // Filter logic ...
     const filteredArchitects = useMemo(() => {
         let result = [...architects];
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
-            result = result.filter(a => a.name.toLowerCase().includes(q) || a.city.toLowerCase().includes(q) || a.specializations.some(s => s.toLowerCase().includes(q)));
+            result = result.filter(a =>
+                (a.firmName || a.username || '').toLowerCase().includes(q) ||
+                a.city.toLowerCase().includes(q) ||
+                (a.specialties || a.specializations || []).some(s => s.toLowerCase().includes(q))
+            );
         }
         if (selectedCity !== 'All Cities') result = result.filter(a => a.city === selectedCity);
-        if (selectedSpecialization !== 'All Styles') result = result.filter(a => a.specializations.includes(selectedSpecialization));
+        if (selectedSpecialization !== 'All Styles') {
+            result = result.filter(a => (a.specialties || a.specializations || []).includes(selectedSpecialization));
+        }
         if (selectedExperience !== 'Any Experience') {
-            // ... experience logic
             result = result.filter(a => {
                 const y = a.yearsExperience;
                 if (selectedExperience === '0-2 years') return y <= 2;
@@ -716,11 +665,14 @@ const BrowseArchitects: React.FC = () => {
 
         switch (sortBy) {
             case 'Most Experienced': result.sort((a, b) => b.yearsExperience - a.yearsExperience); break;
-            case 'Newest': result.sort((a, b) => a.yearsExperience - b.yearsExperience); break;
-            default: // Best Match: Studio > Freelancer > Student
+            case 'Newest': result.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)); break;
+            default: // Best Match: Premium > Date
                 result.sort((a, b) => {
-                    const score = (p?: string) => p === 'studio' ? 3 : p === 'freelancer' ? 2 : 1;
-                    return score(b.selectedPlan) - score(a.selectedPlan) || (b.projectsCompleted || 0) - (a.projectsCompleted || 0);
+                    const score = (p?: string) => p === 'specialy-max' ? 1 : 0;
+                    if (score(b.selectedPlan) !== score(a.selectedPlan)) {
+                        return score(b.selectedPlan) - score(a.selectedPlan);
+                    }
+                    return (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0);
                 });
         }
         return result;
@@ -763,23 +715,43 @@ const BrowseArchitects: React.FC = () => {
 
                 {/* Main Content */}
                 {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+                    <div className="grid grid-cols-1 gap-6 max-w-5xl mx-auto">
+                        {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-24 border border-dashed border-white/10 rounded-2xl bg-white/[0.01] max-w-5xl mx-auto">
+                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Clock className="text-orange-500/50" size={24} />
+                        </div>
+                        <h3 className="text-xl font-serif font-bold text-white mb-2">{error}</h3>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="mt-4 px-6 py-2 bg-white/10 text-white text-xs font-mono uppercase tracking-widest rounded-lg hover:bg-white/20 transition-all"
+                        >
+                            Try Refreshing
+                        </button>
                     </div>
                 ) : filteredArchitects.length === 0 ? (
-                    <div className="text-center py-24 border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
-                        <Users className="mx-auto text-gray-700 mb-4" size={48} />
-                        <h3 className="text-xl font-medium text-white">No professionals found</h3>
-                        <p className="text-gray-500 mb-6">Try adjusting your filters to see more results.</p>
+                    <div className="text-center py-24 border border-dashed border-white/10 rounded-2xl bg-white/[0.01] max-w-5xl mx-auto">
+                        <Users className="mx-auto text-white/5 mb-6" size={64} />
+                        <h3 className="text-2xl font-serif font-bold text-white mb-2">Curating the best...</h3>
+                        <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                            We're currently hand-verifying designers to ensure the highest quality.
+                            Want to be the first to know when new pros land?
+                        </p>
                         <button
-                            onClick={() => { setSearchQuery(''); setSelectedCity('All Cities'); }}
-                            className="text-orange-500 hover:text-orange-400 text-sm font-medium"
+                            onClick={() => {
+                                setNotified(true);
+                                toast.success("We'll reach out when the next batch of pros join!");
+                            }}
+                            disabled={notified}
+                            className={`px-8 py-4 bg-orange-600 text-white font-bold tracking-widest rounded-xl transition-all shadow-xl shadow-orange-900/20 uppercase text-xs ${notified ? 'opacity-50 grayscale' : 'hover:bg-orange-500 transform hover:-translate-y-1'}`}
                         >
-                            Clear all filters
+                            {notified ? 'You are on the list' : 'Notify me when pros join'}
                         </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 gap-6 max-w-5xl mx-auto">
                         {filteredArchitects.map(arch => (
                             <ArchitectCard
                                 key={arch.id}

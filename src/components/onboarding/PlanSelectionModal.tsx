@@ -85,8 +85,8 @@ const plans: Plan[] = [
     highlight: true,
   },
   {
-    id: 'studio',
-    title: 'Studio',
+    id: 'specialy-max',
+    title: 'Specialy Max',
     subtitle: 'For teams managing 10+ projects',
     price: '₹1,999/mo',
     role: 'professional',

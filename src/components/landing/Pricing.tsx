@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 const plans = [
     {
-        name: 'SOLO',
+        name: 'SPECIALY PLUS',
         tagline: 'For the Independent Hustler',
         price: '₹999',
         period: '/mo',
@@ -22,7 +22,7 @@ const plans = [
         ],
     },
     {
-        name: 'STUDIO',
+        name: 'SPECIALY MAX',
         tagline: 'For the Power Firm',
         price: '₹3,000',
         period: '/mo',

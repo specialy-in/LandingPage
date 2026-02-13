@@ -11,7 +11,6 @@ import { AuthenticatedLayout } from './src/components/Layout';
 
 import { OnboardingLayout } from './src/components/onboarding/OnboardingLayout';
 import { OnboardingFlow } from './src/components/onboarding/OnboardingFlow';
-import { SmoothCursor } from './src/components/ui/SmoothCursor';
 import { MobileBlocker } from './src/components/ui/MobileBlocker';
 
 const App: React.FC = () => {
@@ -19,7 +18,6 @@ const App: React.FC = () => {
     <Router>
       <AuthProvider>
         <MobileBlocker />
-        <SmoothCursor />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route
@@ -66,6 +64,15 @@ const App: React.FC = () => {
                   <BrowseArchitects />
                 </AuthenticatedLayout>
               </ProtectedRoute>
+            }
+          />
+          {/* TEMP: Verification Route */}
+          <Route
+            path="/test-onboarding"
+            element={
+              <OnboardingLayout>
+                <OnboardingFlow previewMode={true} />
+              </OnboardingLayout>
             }
           />
         </Routes>

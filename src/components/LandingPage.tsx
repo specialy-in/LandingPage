@@ -25,15 +25,7 @@ const LandingPage: React.FC = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // --- Referral Capture ---
-    const [searchParams] = useSearchParams();
-    React.useEffect(() => {
-        const ref = searchParams.get('ref');
-        if (ref) {
-            console.log("Referral detected:", ref);
-            sessionStorage.setItem('pendingReferral', ref);
-        }
-    }, [searchParams]);
+
 
     // Enhanced Wipe Transition Variants
     const pageVariants = {

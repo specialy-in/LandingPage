@@ -615,9 +615,11 @@ const FilterPills: React.FC<{
 const Marketplace: React.FC = () => {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const urlQuery = searchParams.get('q') || '';
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(urlQuery);
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
     const [selectedPrice, setSelectedPrice] = useState('Any Price');
     const [selectedStyle, setSelectedStyle] = useState('All Styles');
@@ -631,6 +633,10 @@ const Marketplace: React.FC = () => {
         const timer = setTimeout(() => setLoading(false), 600);
         return () => clearTimeout(timer);
     }, []);
+
+    useEffect(() => {
+        setSearchQuery(urlQuery);
+    }, [urlQuery]);
 
     const filteredProducts = useMemo(() => {
         let result = [...allProducts];
@@ -709,15 +715,11 @@ const Marketplace: React.FC = () => {
                     onSortChange={setSortBy}
                 />
 
-                {/* Product Grid */}
+                {/* Product Grid - Bento / Masonry Style */}
                 {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {Array.from({ length: 8 }).map((_, i) => (
-                            <div key={i} className="animate-pulse">
-                                <div className="bg-white/5 aspect-[4/5] rounded-2xl mb-4" />
-                                <div className="h-4 bg-white/5 rounded w-2/3 mb-2" />
-                                <div className="h-3 bg-white/5 rounded w-1/3" />
-                            </div>
+                            <div key={i} className="animate-pulse bg-white/5 rounded-2xl aspect-[3/4]" />
                         ))}
                     </div>
                 ) : filteredProducts.length === 0 ? (
@@ -738,63 +740,87 @@ const Marketplace: React.FC = () => {
                         </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                        {filteredProducts.map(product => (
-                            <div
-                                key={product.id}
-                                onClick={() => setSelectedProduct(product)}
-                                className="group cursor-pointer bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden hover:border-white/20 hover:scale-[1.01] hover:shadow-2xl hover:shadow-black/40 transition-all duration-300 ease-out"
-                            >
-                                {/* Image */}
-                                <div className="relative aspect-[4/5] overflow-hidden bg-gray-900 border-b border-white/5">
-                                    <div className="absolute inset-0 bg-gray-800 animate-pulse" />
-                                    <img
-                                        src={product.images[0]}
-                                        alt={product.name}
-                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                        loading="lazy"
-                                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-[320px]">
+                        {filteredProducts.map((product, index) => {
+                            // Featured items span 2 columns and 2 rows (or just cols)
+                            // Pattern: 1st item is big (2x2), others are 1x1. or some random variation.
+                            // Let's make index 0 and 6 span 2x2 for variety if screen is large enough.
+                            const isFeatured = index === 0 || index === 6;
+                            const colSpan = isFeatured ? 'sm:col-span-2 lg:col-span-2' : 'col-span-1';
+                            const rowSpan = isFeatured ? 'row-span-2' : 'row-span-1';
 
-                                    {/* Overlays */}
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                            return (
+                                <motion.div
+                                    key={product.id}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.3 }}
+                                    onClick={() => setSelectedProduct(product)}
+                                    className={`group relative rounded-2xl overflow-hidden cursor-pointer ${colSpan} ${rowSpan}`}
+                                >
+                                    {/* Full Bleed Image */}
+                                    <div className="absolute inset-0 bg-gray-900">
+                                        <img
+                                            src={product.images[0]}
+                                            alt={product.name}
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                            loading="lazy"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                                    </div>
 
                                     {/* Badges */}
-                                    <div className="absolute top-3 left-3 flex flex-col gap-2">
-                                        {product.rating >= 4.8 && (
-                                            <div className="bg-black/80 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-widest px-3 py-1.5 rounded-sm border border-white/10 shadow-lg flex items-center gap-1.5">
-                                                <Star size={10} className="text-amber-400 fill-amber-400" />
-                                                Architect's Choice
-                                            </div>
-                                        )}
+                                    <div className="absolute top-4 left-4 flex gap-2">
                                         {product.isSponsored && (
-                                            <span className="bg-white/90 backdrop-blur-md text-black text-[10px] uppercase font-bold tracking-widest px-2 py-1 rounded-sm shadow-sm w-fit">
+                                            <span className="px-2 py-1 bg-white/90 backdrop-blur text-black text-[10px] font-bold uppercase tracking-wider rounded-sm">
                                                 Sponsored
+                                            </span>
+                                        )}
+                                        {isFeatured && (
+                                            <span className="px-2 py-1 bg-orange-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-sm shadow-lg">
+                                                Featured
                                             </span>
                                         )}
                                     </div>
 
-                                    {/* Quick View Button */}
-                                    <div className="absolute inset-x-0 bottom-4 flex justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
-                                        <button className="bg-white text-black px-6 py-2.5 rounded-full text-sm font-medium hover:bg-orange-500 hover:text-white transition-colors shadow-xl">
-                                            Quick View
+                                    {/* Glassmorphism Details Overlay */}
+                                    <div className="absolute bottom-4 left-4 right-4 p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl flex flex-col gap-1 transition-all duration-300 group-hover:translate-y-[-40px] md:group-hover:translate-y-[-48px]">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-[10px] text-gray-300 uppercase tracking-widest mb-1">{product.brand}</p>
+                                                <h3 className="text-white font-serif text-lg leading-tight line-clamp-1">{product.name}</h3>
+                                            </div>
+                                            <p className="text-orange-400 font-bold text-sm bg-black/40 px-2 py-1 rounded-lg backdrop-blur-sm">
+                                                {formatPrice(product.price)}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Hover Actions (Visualize) */}
+                                    <div className="absolute bottom-4 left-4 right-4 flex gap-2 translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleVisualize(product.name);
+                                            }}
+                                            className="flex-1 bg-white text-black py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-orange-500 hover:text-white transition-colors shadow-lg flex items-center justify-center gap-2"
+                                        >
+                                            <Eye size={14} /> Visualize
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toast.success('Added to wishlist');
+                                            }}
+                                            className="w-10 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-lg flex items-center justify-center hover:bg-white hover:text-black transition-colors"
+                                        >
+                                            <Heart size={16} />
                                         </button>
                                     </div>
-                                </div>
-
-                                {/* Typography */}
-                                <div className="text-center p-5">
-                                    <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 mb-2 font-medium">
-                                        {product.brand}
-                                    </p>
-                                    <h3 className="text-lg font-serif text-gray-100 leading-tight mb-2 line-clamp-2 group-hover:text-white transition-colors">
-                                        {product.name}
-                                    </h3>
-                                    <p className="text-[#EA580C] font-bold text-base">
-                                        {formatPrice(product.price)}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 )}
             </PageContainer>

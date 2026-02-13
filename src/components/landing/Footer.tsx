@@ -72,8 +72,9 @@ const Footer: React.FC = () => {
                 {/* Bottom Bar */}
                 <div className="w-full mt-48 pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-8">
                     {/* Left: Metadata */}
-                    <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.3em] uppercase text-white/30">
-                        <span>© 2026 Specialy</span>
+                    <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.3em] uppercase text-white/30">
+                        <span>© 2026</span>
+                        <span className="font-display font-bold text-white/40 tracking-tight normal-case">Specialy</span>
                         <div className="w-1 h-1 rounded-full bg-orange-600 shadow-[0_0_8px_rgba(234,88,12,0.6)]" />
                     </div>
 
