@@ -15,10 +15,40 @@ service cloud.firestore {
     // - Involved parties (homeowner or architect) can read/update
     match /proposals/{proposalId} {
       allow create: if request.auth != null;
-      allow read, update: if request.auth != null && (
+      allow read: if request.auth != null && (
         resource.data.homeownerId == request.auth.uid || 
         resource.data.architectId == request.auth.uid
       );
+      allow update: if request.auth != null && (
+        resource.data.homeownerId == request.auth.uid || 
+        resource.data.architectId == request.auth.uid
+      );
+    }
+
+    // Projects Collection
+    // - Users can create projects
+    // - Users can read/update/delete only their own projects
+    match /projects/{projectId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Commissions Collection
+    // - Users can create commission claims
+    // - Users can read their own commissions
+    match /commissions/{commissionId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Unlocked Leads Subcollection (under users)
+    match /users/{userId}/unlockedLeads/{leadId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Credits Subcollection (under users)
+    match /users/{userId}/credits/{creditId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

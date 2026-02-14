@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Logo } from '../ui/Logo';
 
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -56,11 +57,8 @@ const LandingHeader: React.FC<LandingHeaderProps> = ({ role, onToggle }) => {
         >
             <div className="max-w-[1400px] mx-auto px-8 flex items-center justify-between">
                 {/* Logo */}
-                <a href="/" className="flex items-center gap-1 group interactive">
-                    <span className="font-display text-2xl font-bold text-charcoal tracking-tight group-hover:text-orange-600 transition-colors">
-                        Specialy
-                    </span>
-                    <span className="w-2 h-2 rounded-full bg-orange-600 mt-1 group-hover:scale-125 transition-transform" />
+                <a href="/" className="interactive">
+                    <Logo variant={role === 'homeowner' ? 'dark' : 'light'} />
                 </a>
 
                 {/* Right side */}

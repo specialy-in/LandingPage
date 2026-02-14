@@ -107,7 +107,7 @@ const CreateProjectModal: React.FC<{
                         initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none"
                     >
-                        <div className="w-full max-w-lg bg-[#0F0F13] border border-white/10 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto">
+                        <div className="w-full max-w-lg bg-[#12121A] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden pointer-events-auto">
                             <div className="p-6 border-b border-white/10 flex justify-between items-center">
                                 <h3 className="text-lg font-serif font-bold text-white">Create New Canvas</h3>
                                 <button onClick={onClose}><X size={20} className="text-gray-500 hover:text-white" /></button>
@@ -174,10 +174,10 @@ const ProjectCard: React.FC<{ project: Project }> = ({ project }) => {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.02 }}
             onClick={() => navigate(`/workspace/${project.id}`)}
-            className="group relative aspect-[4/3] rounded-2xl overflow-hidden cursor-pointer bg-[#131318] border border-white/5 hover:border-orange-500/30 transition-all duration-500 shadow-2xl hover:shadow-orange-900/10"
+            className="group relative aspect-[4/3] rounded-2xl overflow-hidden cursor-pointer bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-500 shadow-2xl hover:shadow-orange-900/10"
         >
             {/* Full Bleed Image */}
-            <div className="absolute inset-0 bg-[#050505]">
+            <div className="absolute inset-0 bg-[#0A0A0F]">
                 {project.uploadedImageUrl ? (
                     <img
                         src={project.uploadedImageUrl}
@@ -266,7 +266,7 @@ const ProjectsView: React.FC<{ searchQuery: string }> = ({ searchQuery }) => {
                 </div>
             ) : projects.length === 0 ? (
                 /* Onboarding Empty State - No Projects Created Yet */
-                <div className="min-h-[400px] flex flex-col items-center justify-center border border-dashed border-white/10 rounded-3xl bg-white/[0.01]">
+                <div className="min-h-[400px] flex flex-col items-center justify-center border border-dashed border-white/[0.08] rounded-3xl bg-white/[0.02]">
                     <div className="w-48 h-48 mb-6 opacity-30">
                         {/* Placeholder Line Art Illustration */}
                         <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" strokeWidth="1" className="text-gray-500">
@@ -290,7 +290,7 @@ const ProjectsView: React.FC<{ searchQuery: string }> = ({ searchQuery }) => {
                 </div>
             ) : filtered.length === 0 ? (
                 /* Search Empty State - Projects Exist but No Match */
-                <div className="min-h-[300px] flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
+                <div className="min-h-[300px] flex flex-col items-center justify-center border border-dashed border-white/[0.08] rounded-2xl bg-white/[0.02]">
                     <Search className="text-gray-600 mb-4" size={48} />
                     <h3 className="text-xl font-medium text-white mb-2">No projects found</h3>
                     <p className="text-gray-500">We couldn't find any projects matching "{searchQuery}"</p>
@@ -329,8 +329,8 @@ const HomeownerDashboard: React.FC = () => {
 
     return (
         <div className="min-h-screen">
-            <Toaster position="bottom-right" toastOptions={{
-                style: { background: '#111', color: '#fff', border: '1px solid #333' }
+            <Toaster position="top-center" toastOptions={{
+                style: { background: '#1a1a2e', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', fontSize: '13px' }
             }} />
 
             <AnimatePresence mode="wait">

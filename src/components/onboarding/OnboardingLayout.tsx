@@ -1,4 +1,5 @@
 import React from 'react';
+import { Logo } from '../ui/Logo';
 
 interface OnboardingLayoutProps {
     children: React.ReactNode;
@@ -30,12 +31,7 @@ export const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({ children }) 
 
             {/* Header Logo */}
             <div className="absolute top-6 left-6 md:top-8 md:left-8 z-20">
-                <div className="flex items-center gap-1">
-                    <span className="font-display text-xl font-bold text-white tracking-tight">
-                        Specialy
-                    </span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1" />
-                </div>
+                <Logo variant="light" />
             </div>
 
             {/* Content Container — centered modal style, sharp corners */}

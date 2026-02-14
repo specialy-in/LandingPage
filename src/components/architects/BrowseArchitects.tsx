@@ -560,7 +560,7 @@ const ProposalModal: React.FC<{
 
 // --- Main Page ---
 const BrowseArchitects: React.FC = () => {
-    const { user, logout } = useAuth();
+    const { user, signOut } = useAuth();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const urlQuery = searchParams.get('q') || '';

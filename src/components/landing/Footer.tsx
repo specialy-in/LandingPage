@@ -3,6 +3,7 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Instagram, Twitter, Linkedin } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { Logo } from '../ui/Logo';
 
 const Footer: React.FC = () => {
     const footerRef = useRef<HTMLElement>(null);
@@ -74,8 +75,7 @@ const Footer: React.FC = () => {
                     {/* Left: Metadata */}
                     <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.3em] uppercase text-white/30">
                         <span>© 2026</span>
-                        <span className="font-display font-bold text-white/40 tracking-tight normal-case">Specialy</span>
-                        <div className="w-1 h-1 rounded-full bg-orange-600 shadow-[0_0_8px_rgba(234,88,12,0.6)]" />
+                        <Logo className="scale-75 origin-left" variant="light" />
                     </div>
 
                     {/* Center: Crafted Message */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { Logo } from '../ui/Logo';
 import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../lib/firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
@@ -186,12 +187,9 @@ export const ProProfilePreview: React.FC<ProProfilePreviewProps> = ({ initialDat
             <motion.div variants={stagger.container} initial="hidden" animate="show" className="relative z-10 pb-32">
 
                 <motion.div variants={stagger.item} className="flex items-center justify-between px-6 md:px-12 py-4 border-b border-white/5">
-                    <div className="flex items-center gap-1">
-                        <span className="font-display text-xl font-bold text-white tracking-tight">
-                            Specialy
-                        </span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1" />
-                        <span className="ml-2 text-[10px] font-mono text-white/20 uppercase tracking-[0.2em]">Profile Hub</span>
+                    <div className="flex items-center gap-2">
+                        <Logo variant="light" />
+                        <span className="text-[10px] font-mono text-white/20 uppercase tracking-[0.2em] border-l border-white/10 pl-3 ml-1">Profile Hub</span>
                     </div>
                 </motion.div>
 

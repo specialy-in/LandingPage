@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { useAuth } from '../hooks/useAuth';
 import { Settings, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Logo } from './ui/Logo';
 
 export const Header: React.FC = () => {
     const { user, signOut } = useAuth();
@@ -20,6 +21,17 @@ export const Header: React.FC = () => {
         { id: 'architects', label: 'BROWSE PROS', path: '/dashboard?tab=architects' },
     ];
 
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+                setIsProfileOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
     const handleSignOut = async () => {
         try {
             if (signOut) await signOut();
@@ -30,39 +42,41 @@ export const Header: React.FC = () => {
     };
 
     return (
-        <nav className="sticky top-0 z-50 h-20 bg-[#0A0A0F]/90 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
-            <div className="w-full h-full max-w-[1800px] mx-auto px-8 md:px-12 flex items-center justify-between">
+        <nav className="sticky top-0 z-50 border-b border-white/[0.06] transition-all duration-300"
+            style={{
+                background: 'linear-gradient(to right, rgba(10,10,15,0.85), rgba(17,24,39,0.85))',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+            }}
+        >
+            <div className="w-full h-full max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
                 {/* 1. Logo */}
-                <Link to="/dashboard" className="flex items-center gap-1 group">
-                    <span className="text-2xl font-bold text-white tracking-tight group-hover:text-orange-500 transition-colors">
-                        Specialy
-                    </span>
-                    <span className="w-2 h-2 rounded-full bg-orange-600 mt-1 group-hover:scale-125 transition-transform" />
+                <Link to="/dashboard">
+                    <Logo variant="light" />
                 </Link>
 
-                {/* 2. Navigation Tabs (Centered) */}
-                <div className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2 h-full gap-8">
+                {/* 2. Navigation Tabs — Pill Style (matching Pro Dashboard) */}
+                <div className="hidden md:flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1">
                     {navTabs.map((tab) => {
                         const isActive = currentTab === tab.id;
                         return (
                             <Link
                                 key={tab.id}
                                 to={tab.path}
-                                className="relative h-full flex items-center px-2 group"
+                                className={`relative px-5 py-2.5 text-xs font-semibold tracking-wider rounded-lg transition-all flex items-center gap-2 ${isActive
+                                    ? 'text-white'
+                                    : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.03]'
+                                    }`}
                             >
-                                <span className={`text-xs font-bold tracking-[0.15em] transition-colors duration-300 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'
-                                    }`}>
-                                    {tab.label}
-                                </span>
                                 {isActive && (
                                     <motion.div
-                                        layoutId="nav-underline"
-                                        className="absolute bottom-0 left-0 right-0 h-[3px] bg-orange-600 shadow-[0_0_10px_rgba(234,88,12,0.5)]"
-                                        initial={false}
-                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                        layoutId="activeHomeTab"
+                                        className="absolute inset-0 bg-white/[0.08] border border-white/[0.1] rounded-lg"
+                                        transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
                                     />
                                 )}
+                                <span className="relative z-10">{tab.label}</span>
                             </Link>
                         );
                     })}
@@ -75,26 +89,25 @@ export const Header: React.FC = () => {
                     <div className="relative" ref={profileRef}>
                         <button
                             onClick={() => setIsProfileOpen(!isProfileOpen)}
-                            className="flex items-center gap-3 py-1 pl-1 pr-3 rounded-full hover:bg-white/5 border border-transparent hover:border-white/5 transition-all group"
+                            className="flex items-center gap-3 py-1 pl-1 pr-3 rounded-full hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-all group"
                         >
                             {user?.photoURL ? (
                                 <img
                                     src={user.photoURL}
                                     alt="User"
-                                    className="w-9 h-9 rounded-full object-cover border border-white/10 group-hover:border-orange-500/50 transition-colors"
+                                    className="w-8 h-8 rounded-full object-cover border border-white/10 group-hover:border-orange-500/50 transition-colors"
                                 />
                             ) : (
-                                <div className="w-9 h-9 rounded-full bg-[#1A1A20] flex items-center justify-center text-gray-500 border border-white/10">
-                                    <UserIcon size={16} />
+                                <div className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-gray-500 border border-white/[0.08]">
+                                    <UserIcon size={14} />
                                 </div>
                             )}
                             <div className="hidden sm:block text-left">
-                                <p className="text-xs font-bold text-white group-hover:text-orange-500 transition-colors">
+                                <p className="text-xs font-semibold text-gray-300 group-hover:text-white transition-colors">
                                     {user?.displayName?.split(' ')[0] || 'Member'}
                                 </p>
-                                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Premium</p>
                             </div>
-                            <ChevronDown size={14} className="text-gray-600 group-hover:text-white transition-colors" />
+                            <ChevronDown size={13} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
                         </button>
 
                         <AnimatePresence>
@@ -103,22 +116,22 @@ export const Header: React.FC = () => {
                                     initial={{ opacity: 0, y: 8, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                                    transition={{ duration: 0.1 }}
-                                    className="absolute right-0 top-full mt-4 w-56 bg-[#0A0A0F] border border-white/10 rounded-xl shadow-2xl py-2 z-50 overflow-hidden"
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute right-0 top-full mt-3 w-56 bg-[#12121A] border border-white/[0.08] rounded-xl shadow-2xl py-2 z-50 overflow-hidden"
                                 >
-                                    <div className="px-4 py-3 border-b border-white/10 mb-2">
+                                    <div className="px-4 py-3 border-b border-white/[0.06] mb-2">
                                         <p className="text-sm font-medium text-white truncate">{user?.displayName || 'User'}</p>
                                         <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                                     </div>
-                                    <button className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 hover:text-white flex items-center gap-3 transition-colors">
-                                        <Settings size={16} /> Account Settings
+                                    <button className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-white/[0.04] hover:text-white flex items-center gap-3 transition-colors">
+                                        <Settings size={15} /> Account Settings
                                     </button>
-                                    <div className="h-px bg-white/5 my-2" />
+                                    <div className="h-px bg-white/[0.04] my-1.5 mx-3" />
                                     <button
                                         onClick={handleSignOut}
-                                        className="w-full text-left px-4 py-2.5 text-sm text-red-500/80 hover:bg-red-500/10 hover:text-red-500 flex items-center gap-3 transition-colors"
+                                        className="w-full text-left px-4 py-2.5 text-sm text-red-500/70 hover:bg-red-500/10 hover:text-red-400 flex items-center gap-3 transition-colors"
                                     >
-                                        <LogOut size={16} /> Sign Out
+                                        <LogOut size={15} /> Sign Out
                                     </button>
                                 </motion.div>
                             )}

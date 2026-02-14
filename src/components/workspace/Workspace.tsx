@@ -156,6 +156,17 @@ const Workspace: React.FC = () => {
         (pendingChanges.floor ? 1 : 0) +
         pendingPlacements.filter(p => p.strokePoints.length > 0).length;
 
+    // --- Update Image Size on Load ---
+    useEffect(() => {
+        if (!currentImageUrl) return;
+
+        const img = new window.Image();
+        img.src = currentImageUrl;
+        img.onload = () => {
+            setImageSize({ width: img.width, height: img.height });
+        };
+    }, [currentImageUrl]);
+
     // --- Auto Save Hook ---
     const { status: saveStatus, lastSaved, debouncedSaveSurfaces, saveImmediate } = useAutoSave(projectId, { walls, floor: pendingChanges.floor });
 
